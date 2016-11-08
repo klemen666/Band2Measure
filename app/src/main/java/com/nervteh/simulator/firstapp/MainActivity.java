@@ -28,6 +28,7 @@ import android.os.AsyncTask;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -39,6 +40,12 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.math.RoundingMode;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Random;
@@ -50,6 +57,7 @@ import static android.R.attr.name;
 public class MainActivity extends AppCompatActivity {
 
     private BandClient client = null;
+
     TextView heartRateText;
     TextView heartRateQuality;
     TextView gsrText;
@@ -59,6 +67,13 @@ public class MainActivity extends AppCompatActivity {
     File outputFileGSR;
     File outputFileRR;
     File outputFileTemp;
+    EditText hostText;
+    EditText portText;
+
+    DatagramSocket socket = null;
+    int port;
+    InetAddress host;
+    static boolean serverRunning;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,10 +85,46 @@ public class MainActivity extends AppCompatActivity {
         gsrText = (TextView) findViewById(R.id.gsrText);
         skinTempText = (TextView) findViewById(R.id.skinTempText);
         intervalRRText = (TextView) findViewById(R.id.intervalRRText);
+        hostText = (EditText) findViewById(R.id.ipAddress);
+        portText = (EditText) findViewById(R.id.hostPort);
+
+        connectUDP();
+        serverRunning = true;
 
         new BandConnectTask().execute();
 
 
+    }
+
+    private void connectUDP(){
+        try {
+
+            listenUDPTask();
+
+            String hostIp = String.valueOf(hostText.getText());
+            if(portText.getText().toString().length() > 0){
+                port = Integer.parseInt(portText.getText().toString());
+            }
+            else{
+                Toast.makeText(this, "Vnesite številko vrat!", Toast.LENGTH_LONG).show();
+            }
+
+            Log.d("UDP", hostIp);
+            Log.d("UDP", String.valueOf(port));
+
+            if (hostIp == "" || hostIp == null) {
+                Toast.makeText(this, "Vnesite IP naslov strežnika!", Toast.LENGTH_LONG).show();
+            }
+            else {
+                socket = new DatagramSocket();
+                host = InetAddress.getByName(hostIp);
+            }
+
+        } catch (SocketException e) {
+            e.printStackTrace();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -83,14 +134,15 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void userAccepted(boolean consentGiven) {
                     Log.d("Band", "User permission granted!");
+                    connectUDP();
                     startReceivingData();
                     createFiles();
-
                 }
             });
         }
         if (client.getSensorManager().getCurrentHeartRateConsent() == UserConsent.GRANTED) {
             Log.d("Band", "User permission has already been granted!");
+            connectUDP();
             startReceivingData();
             createFiles();
         }
@@ -114,6 +166,7 @@ public class MainActivity extends AppCompatActivity {
             ex.printStackTrace();
         }
     }
+
 
     protected void onPause() {
         super.onPause();
@@ -244,6 +297,12 @@ public class MainActivity extends AppCompatActivity {
                 if (state == ConnectionState.CONNECTED) {
                     Log.d("Band", "Band connected!");
 
+                    //Sending UDP Packet
+                    //socket = new DatagramSocket();
+                    //host = InetAddress.getByName("192.168.0.145");
+                    //String s = "Band connected!";
+                    //sendUDPData(s);
+
                 }
                 else {
                     Log.d("Band", "Coonection refused!");
@@ -270,9 +329,9 @@ public class MainActivity extends AppCompatActivity {
             });
 
             //Log.d("HeartRateChanged", "HR: " + String.valueOf(event.getHeartRate()));
-
-
             try {
+                String s = String.valueOf(event.getTimestamp()) + " - " +  "HR: " + String.valueOf(event.getHeartRate()) + " - " + String.valueOf(event.getQuality());
+                sendUDPData(s);
 
                 FileOutputStream os = new FileOutputStream(outputFileHR, true);
                 OutputStreamWriter outWriter = new OutputStreamWriter(os);
@@ -305,6 +364,9 @@ public class MainActivity extends AppCompatActivity {
 
             try {
 
+                String s = String.valueOf(bandGsrEvent.getTimestamp()) + " - " +  "GSR: " + String.valueOf(bandGsrEvent.getResistance());
+                sendUDPData(s);
+
                 FileOutputStream os = new FileOutputStream(outputFileGSR, true);
                 OutputStreamWriter outWriter = new OutputStreamWriter(os);
                 outWriter.append(String.valueOf(bandGsrEvent.getTimestamp()) + " - ");
@@ -335,6 +397,9 @@ public class MainActivity extends AppCompatActivity {
 
             try {
 
+                String s = String.valueOf(bandSkinTemperatureEvent.getTimestamp()) + " - " +  "Temp: " + String.valueOf(bandSkinTemperatureEvent.getTemperature());
+                sendUDPData(s);
+
                 FileOutputStream os = new FileOutputStream(outputFileTemp, true);
                 OutputStreamWriter outWriter = new OutputStreamWriter(os);
                 outWriter.append(String.valueOf(bandSkinTemperatureEvent.getTimestamp()) + " - ");
@@ -364,6 +429,9 @@ public class MainActivity extends AppCompatActivity {
 
             try {
 
+                String s = String.valueOf(bandRRIntervalEvent.getTimestamp()) + " - " +  "RR: " + String.valueOf(bandRRIntervalEvent.getInterval());
+                sendUDPData(s);
+
                 FileOutputStream os = new FileOutputStream(outputFileRR, true);
                 OutputStreamWriter outWriter = new OutputStreamWriter(os);
                 outWriter.append(String.valueOf(bandRRIntervalEvent.getTimestamp()) + " - ");
@@ -382,4 +450,47 @@ public class MainActivity extends AppCompatActivity {
     };
 
 
+    // Funkcija, ki pošilja UDP Datagrame s določenim tekstom
+    public void sendUDPData(String s){
+
+        byte[] b = s.getBytes();
+        DatagramPacket dp = new DatagramPacket(b, b.length, host, port);
+        try {
+            socket.send(dp);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    //funkcija, ki posluša na UDP portu za "STOP" komando
+    private void listenUDPTask() {
+
+        new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                Log.d("UDP", "Tread start");
+                String message = "";
+                byte[] buffer = new byte[65536];
+                DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+
+                try {
+                    while (serverRunning){
+                        socket.receive(packet);
+                        message = new String(buffer, 0, packet.getLength());
+                        Log.d("UDP", message);
+                        if (message.matches("STOP")){
+                            Log.d("UDP", "Sedaj bi se ustavil");
+                        }
+                    }
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        }).start();
+
+    }
 }
