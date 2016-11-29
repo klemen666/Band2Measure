@@ -1,7 +1,9 @@
 package com.nervteh.simulator.firstapp;
 
+import android.content.Context;
 import android.content.DialogInterface;
 import android.icu.math.BigDecimal;
+import android.net.wifi.WifiManager;
 import android.os.BadParcelableException;
 import android.os.Environment;
 import android.os.StrictMode;
@@ -47,6 +49,7 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Random;
 import java.util.jar.Attributes;
@@ -71,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
     EditText portText;
 
     DatagramSocket socket = null;
-    int port;
+    int port = 8888;
     InetAddress host;
 
     // naslov in port, ki ga dobimo iz java aplikacije
@@ -92,18 +95,26 @@ public class MainActivity extends AppCompatActivity {
         hostText = (EditText) findViewById(R.id.ipAddress);
         portText = (EditText) findViewById(R.id.hostPort);
 
-        connectUDP();
+
         serverRunning = true;
         new BandConnectTask().execute();
+        connectUDP();
+        new ListenUDPAsyncTask().execute();
 
     }
 
     private void connectUDP(){
         try {
 
-            // usvarimo novo nit, kjer poslušamo ukaze iz java aplikacije
-            listenUDPTask(this);
+            if (socket == null) {
+                socket = new DatagramSocket(port);
+                socket.setBroadcast(true);
+            }
 
+            // usvarimo novo nit, kjer poslušamo ukaze iz java aplikacije
+            //listenUDPTask(this);
+
+/*
             String hostIp = "";
 
             // če ne dobimo naslova iz java aplikacije
@@ -127,15 +138,38 @@ public class MainActivity extends AppCompatActivity {
                     host = InetAddress.getByName(hostIp);
                 }
             }
+
+            */
+
             }   catch(SocketException e){
                 e.printStackTrace();
-            }catch(UnknownHostException e){
+            }/*catch(UnknownHostException e){
                 e.printStackTrace();
-            }
+            }*/
 
         }
 
 
+    public void toStart() {
+        if(client.getSensorManager().getCurrentHeartRateConsent() != UserConsent.GRANTED){
+            client.getSensorManager().requestHeartRateConsent(MainActivity.this, new HeartRateConsentListener() {
+                @Override
+                public void userAccepted(boolean consentGiven) {
+                    Log.d("Band", "User permission granted!");
+                    connectUDP();
+                    createFiles();
+                    startReceivingData();
+
+                }
+            });
+        }
+        if (client.getSensorManager().getCurrentHeartRateConsent() == UserConsent.GRANTED) {
+            Log.d("Band", "User permission has already been granted!");
+            connectUDP();
+            createFiles();
+            startReceivingData();
+        }
+    }
 
     public void start(View view) {
         if(client.getSensorManager().getCurrentHeartRateConsent() != UserConsent.GRANTED){
@@ -149,6 +183,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         }
+
         if (client.getSensorManager().getCurrentHeartRateConsent() == UserConsent.GRANTED) {
             Log.d("Band", "User permission has already been granted!");
             connectUDP();
@@ -170,7 +205,6 @@ public class MainActivity extends AppCompatActivity {
             client.getSensorManager().unregisterSkinTemperatureEventListener(skinTemperatureListener);
             client.getSensorManager().unregisterRRIntervalEventListener(bandRRIntervalListener);
 
-
         } catch (BandIOException ex) {
             ex.printStackTrace();
         }
@@ -178,11 +212,13 @@ public class MainActivity extends AppCompatActivity {
 
     public void toStop() {
         Log.d("Band", "Stop receiving data!");
+    /*
         heartRateText.setText("");
         heartRateQuality.setText("QUALITY: ");
         gsrText.setText("");
         skinTempText.setText("");
         intervalRRText.setText("");
+    */
         try {
             client.getSensorManager().unregisterHeartRateEventListener(heartRateListener);
             client.getSensorManager().unregisterGsrEventListener(gsrListener);
@@ -193,8 +229,24 @@ public class MainActivity extends AppCompatActivity {
         } catch (BandIOException ex) {
             ex.printStackTrace();
         }
+
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        connectUDP();
+        new BandConnectTask().execute();
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+
+        connectUDP();
+        new BandConnectTask().execute();
+    }
 
     protected void onPause() {
         super.onPause();
@@ -210,6 +262,7 @@ public class MainActivity extends AppCompatActivity {
         gsrText.setText("");
         skinTempText.setText("");
         intervalRRText.setText("");
+
         try {
             client.getSensorManager().unregisterHeartRateEventListener(heartRateListener);
             client.getSensorManager().unregisterGsrEventListener(gsrListener);
@@ -310,15 +363,9 @@ public class MainActivity extends AppCompatActivity {
                 if (state == ConnectionState.CONNECTED) {
                     Log.d("Band", "Band connected!");
 
-                    //Sending UDP Packet
-                    //socket = new DatagramSocket();
-                    //host = InetAddress.getByName("192.168.0.145");
-                    //String s = "Band connected!";
-                    //sendUDPData(s);
-
                 }
                 else {
-                    Log.d("Band", "Coonection refused!");
+                    Log.d("Band", "Band Connection refused!");
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -343,7 +390,7 @@ public class MainActivity extends AppCompatActivity {
 
             //Log.d("HeartRateChanged", "HR: " + String.valueOf(event.getHeartRate()));
             try {
-                String s = String.valueOf(event.getTimestamp()) + " - " +  "HR: " + String.valueOf(event.getHeartRate()) + " - " + String.valueOf(event.getQuality());
+                String s = String.valueOf(event.getTimestamp()) + "," +  "HR," + String.valueOf(event.getHeartRate()) + "," + String.valueOf(event.getQuality());
                 sendUDPData(s);
 
                 FileOutputStream os = new FileOutputStream(outputFileHR, true);
@@ -377,7 +424,7 @@ public class MainActivity extends AppCompatActivity {
 
             try {
 
-                String s = String.valueOf(bandGsrEvent.getTimestamp()) + " - " +  "GSR: " + String.valueOf(bandGsrEvent.getResistance());
+                String s = String.valueOf(bandGsrEvent.getTimestamp()) + "," +  "GSR," + String.valueOf(bandGsrEvent.getResistance());
                 sendUDPData(s);
 
                 FileOutputStream os = new FileOutputStream(outputFileGSR, true);
@@ -410,7 +457,7 @@ public class MainActivity extends AppCompatActivity {
 
             try {
 
-                String s = String.valueOf(bandSkinTemperatureEvent.getTimestamp()) + " - " +  "Temp: " + String.valueOf(bandSkinTemperatureEvent.getTemperature());
+                String s = String.valueOf(bandSkinTemperatureEvent.getTimestamp()) + "," +  "Temp," + String.valueOf(bandSkinTemperatureEvent.getTemperature());
                 sendUDPData(s);
 
                 FileOutputStream os = new FileOutputStream(outputFileTemp, true);
@@ -442,7 +489,7 @@ public class MainActivity extends AppCompatActivity {
 
             try {
 
-                String s = String.valueOf(bandRRIntervalEvent.getTimestamp()) + " - " +  "RR: " + String.valueOf(bandRRIntervalEvent.getInterval());
+                String s = String.valueOf(bandRRIntervalEvent.getTimestamp()) + "," +  "RR," + String.valueOf(bandRRIntervalEvent.getInterval());
                 sendUDPData(s);
 
                 FileOutputStream os = new FileOutputStream(outputFileRR, true);
@@ -470,6 +517,7 @@ public class MainActivity extends AppCompatActivity {
         DatagramPacket dp = new DatagramPacket(b, b.length, host, port);
         try {
             socket.send(dp);
+            Log.d("UDP", s);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -488,20 +536,34 @@ public class MainActivity extends AppCompatActivity {
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
                 try {
+
                     while (serverRunning){
+                        Log.d("UDP", "Listening....");
+
                         socket.receive(packet);
+
                         message = new String(buffer, 0, packet.getLength());
                         Log.d("UDP", message);
-                        if (message.contains("STOP")){
-                        Log.d("UDP", "Dobil sem STOP!");
-                            mainActivity.toStop();
-                        }
+
                         if (message.contains("START")){
                             Log.d("UDP", "Dobil sem START!");
                             host = packet.getAddress();
-                            mainActivity.startReceivingData();
+                            mainActivity.toStart();
                         }
-                }
+
+                        if (message.contains("STOP")){
+                            Log.d("UDP", "Dobil sem STOP!");
+                            toStop();
+
+                             /*   runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        toStop();
+                                    }
+                            });*/
+
+                        }
+                    }
 
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -510,4 +572,56 @@ public class MainActivity extends AppCompatActivity {
             }
         }).start();
     }
+
+
+    private class ListenUDPAsyncTask extends AsyncTask<Void, String, String> {
+
+        @Override
+        protected String doInBackground(Void... params) {
+
+            Log.d("UDP", "AsyncTask started");
+            String message = "";
+
+            while(true) {
+                try {
+                    byte[] buffer = new byte[65536];
+                    DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+                    Log.d("UDP", "Listening....");
+
+                    socket.receive(packet);
+                    message = new String(buffer, 0, packet.getLength());
+                    Log.d("UDP", message);
+
+                    if (isCancelled()) break;
+
+                    if (message.contains("START")){
+                        Log.d("UDP", "Dobil sem START!");
+                        host = packet.getAddress();
+                        toStart();
+                    }
+
+                    if (message.contains("STOP")){
+                        Log.d("UDP", "Dobil sem STOP!");
+                        toStop();
+
+                             /*   runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        toStop();
+                                    }
+                            });*/
+
+                    }
+
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+
+            return message;
+        }
+
+
+    }
+
 }
