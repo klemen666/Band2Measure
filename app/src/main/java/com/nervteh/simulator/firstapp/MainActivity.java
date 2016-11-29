@@ -73,6 +73,10 @@ public class MainActivity extends AppCompatActivity {
     DatagramSocket socket = null;
     int port;
     InetAddress host;
+
+    // naslov in port, ki ga dobimo iz java aplikacije
+    InetAddress PChost;
+
     static boolean serverRunning;
 
     @Override
@@ -90,42 +94,47 @@ public class MainActivity extends AppCompatActivity {
 
         connectUDP();
         serverRunning = true;
-
         new BandConnectTask().execute();
-
 
     }
 
     private void connectUDP(){
         try {
 
-            listenUDPTask();
+            // usvarimo novo nit, kjer poslušamo ukaze iz java aplikacije
+            listenUDPTask(this);
 
-            String hostIp = String.valueOf(hostText.getText());
-            if(portText.getText().toString().length() > 0){
-                port = Integer.parseInt(portText.getText().toString());
+            String hostIp = "";
+
+            // če ne dobimo naslova iz java aplikacije
+            if (host == null) {
+
+                hostIp = String.valueOf(hostText.getText());
+
+                if (portText.getText().toString().length() > 0) {
+                    port = Integer.parseInt(portText.getText().toString());
+                } else {
+                    Toast.makeText(this, "Vnesite številko vrat!", Toast.LENGTH_LONG).show();
+                }
+
+                Log.d("UDP", hostIp);
+                Log.d("UDP", String.valueOf(port));
+
+                if (hostIp == "" || hostIp == null) {
+                    Toast.makeText(this, "Vnesite IP naslov strežnika!", Toast.LENGTH_LONG).show();
+                } else {
+                    socket = new DatagramSocket();
+                    host = InetAddress.getByName(hostIp);
+                }
             }
-            else{
-                Toast.makeText(this, "Vnesite številko vrat!", Toast.LENGTH_LONG).show();
+            }   catch(SocketException e){
+                e.printStackTrace();
+            }catch(UnknownHostException e){
+                e.printStackTrace();
             }
 
-            Log.d("UDP", hostIp);
-            Log.d("UDP", String.valueOf(port));
-
-            if (hostIp == "" || hostIp == null) {
-                Toast.makeText(this, "Vnesite IP naslov strežnika!", Toast.LENGTH_LONG).show();
-            }
-            else {
-                socket = new DatagramSocket();
-                host = InetAddress.getByName(hostIp);
-            }
-
-        } catch (SocketException e) {
-            e.printStackTrace();
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
         }
-    }
+
 
 
     public void start(View view) {
@@ -167,10 +176,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
-    protected void onPause() {
-        super.onPause();
-        /*Log.d("Band", "Stop receiving data!");
+    public void toStop() {
+        Log.d("Band", "Stop receiving data!");
         heartRateText.setText("");
         heartRateQuality.setText("QUALITY: ");
         gsrText.setText("");
@@ -182,9 +189,15 @@ public class MainActivity extends AppCompatActivity {
             client.getSensorManager().unregisterSkinTemperatureEventListener(skinTemperatureListener);
             client.getSensorManager().unregisterRRIntervalEventListener(bandRRIntervalListener);
 
+
         } catch (BandIOException ex) {
             ex.printStackTrace();
-        }*/
+        }
+    }
+
+
+    protected void onPause() {
+        super.onPause();
     }
 
     @Override
@@ -460,11 +473,10 @@ public class MainActivity extends AppCompatActivity {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 
-    //funkcija, ki posluša na UDP portu za "STOP" komando
-    private void listenUDPTask() {
+    //funkcija, ki posluša na UDP portu za "START" in "STOP" ukaze
+    private void listenUDPTask(final MainActivity mainActivity) {
 
         new Thread(new Runnable() {
 
@@ -480,10 +492,16 @@ public class MainActivity extends AppCompatActivity {
                         socket.receive(packet);
                         message = new String(buffer, 0, packet.getLength());
                         Log.d("UDP", message);
-                        if (message.matches("STOP")){
-                            Log.d("UDP", "Sedaj bi se ustavil");
+                        if (message.contains("STOP")){
+                        Log.d("UDP", "Dobil sem STOP!");
+                            mainActivity.toStop();
                         }
-                    }
+                        if (message.contains("START")){
+                            Log.d("UDP", "Dobil sem START!");
+                            host = packet.getAddress();
+                            mainActivity.startReceivingData();
+                        }
+                }
 
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -491,6 +509,5 @@ public class MainActivity extends AppCompatActivity {
 
             }
         }).start();
-
     }
 }
