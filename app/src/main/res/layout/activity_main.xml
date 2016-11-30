@@ -41,19 +41,39 @@
 
         </LinearLayout>
 
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/linearLayout6"
+        android:layout_marginTop="20dp"
+        android:layout_below="@+id/linearLayout0">
+
+
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:id="@+id/userInfo"
+            android:textAlignment="center"
+            android:text="Ime testa" />
+
+    </LinearLayout>
+
 
 
     <LinearLayout
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/linearLayout1" >
+        android:id="@+id/linearLayout1"
+        android:layout_below="@id/linearLayout6">
 
         <Button
             android:text="START"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="80dp"
+            android:layout_marginTop="20dp"
             android:id="@+id/btnStart"
             android:onClick="start"
             android:layout_marginLeft="40dp"/>
@@ -65,7 +85,7 @@
             android:layout_height="wrap_content"
             android:id="@+id/btnStop"
             android:onClick="stop"
-            android:layout_marginTop="80dp"
+            android:layout_marginTop="20dp"
             android:layout_marginLeft="100dp" />
 
     </LinearLayout>
@@ -198,6 +218,8 @@
             android:text="QUALITY: ACQUIRING" />
 
     </LinearLayout>
+
+
 
 
 </RelativeLayout>

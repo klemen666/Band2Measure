@@ -72,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
     File outputFileTemp;
     EditText hostText;
     EditText portText;
+    EditText userInfo;
 
     DatagramSocket socket = null;
     int port = 8888;
@@ -94,10 +95,16 @@ public class MainActivity extends AppCompatActivity {
         intervalRRText = (TextView) findViewById(R.id.intervalRRText);
         hostText = (EditText) findViewById(R.id.ipAddress);
         portText = (EditText) findViewById(R.id.hostPort);
-
+        userInfo = (EditText) findViewById(R.id.userInfo);
 
         serverRunning = true;
-        new BandConnectTask().execute();
+
+        try {
+            new BandConnectTask().execute();
+        }catch (Exception e){
+            e.printStackTrace();
+            Log.d("Band", "Can't connect to band!");
+        }
         connectUDP();
         new ListenUDPAsyncTask().execute();
 
@@ -114,7 +121,6 @@ public class MainActivity extends AppCompatActivity {
             // usvarimo novo nit, kjer poslušamo ukaze iz java aplikacije
             //listenUDPTask(this);
 
-/*
             String hostIp = "";
 
             // če ne dobimo naslova iz java aplikacije
@@ -139,13 +145,13 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
 
-            */
+
 
             }   catch(SocketException e){
                 e.printStackTrace();
-            }/*catch(UnknownHostException e){
+            }catch(UnknownHostException e){
                 e.printStackTrace();
-            }*/
+            }
 
         }
 
@@ -298,19 +304,24 @@ public class MainActivity extends AppCompatActivity {
     public void createFiles(){
         if (isExternalStorageWritable()){
             Log.d("Storage", "Writable");
-            final String path = Environment.getExternalStorageDirectory().toString();
-            String timestampFile = new SimpleDateFormat("yyyyMMddhhmm").format(new Date());
-            File dir = new File(path, "/measurements/" + timestampFile);
-            String fileNameEnd = ".txt";
 
-            if (!dir.exists()){
-                dir.mkdirs();
-            }
+            if (userInfo != null ){
 
-            outputFileHR = new File(dir, "HRData-" + timestampFile + fileNameEnd);
-            outputFileGSR = new File(dir, "GSRData-" + timestampFile + fileNameEnd);
-            outputFileRR = new File(dir, "RRData-" + timestampFile + fileNameEnd);
-            outputFileTemp = new File(dir, "TempData-" + timestampFile + fileNameEnd);
+                String userInfoString = String.valueOf(userInfo.getText());
+
+                final String path = Environment.getExternalStorageDirectory().toString();
+                String timestampFile = new SimpleDateFormat("yyyyMMddhhmm").format(new Date());
+                File dir = new File(path, "/measurements/" + timestampFile + "-" + userInfoString);
+                String fileNameEnd = ".txt";
+
+                if (!dir.exists()){
+                    dir.mkdirs();
+                }
+
+                outputFileHR = new File(dir, "HRData-" + userInfoString + "-" + timestampFile + fileNameEnd);
+                outputFileGSR = new File(dir, "GSRData-" + userInfoString + "-" + timestampFile + fileNameEnd);
+                outputFileRR = new File(dir, "RRData-" + userInfoString + "-" + timestampFile + fileNameEnd);
+                outputFileTemp = new File(dir, "TempData-" + userInfoString + "-" + timestampFile + fileNameEnd);
 
                 try {
 
@@ -322,6 +333,13 @@ public class MainActivity extends AppCompatActivity {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+
+            }else{
+                Toast.makeText(this, "Vnesite ime testa", Toast.LENGTH_LONG).show();
+                return;
+            }
+
+
 
         }
     }
@@ -355,10 +373,12 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected Void doInBackground(Void... params) {
-            BandInfo[] devices = BandClientManager.getInstance().getPairedBands();
-            client = BandClientManager.getInstance().create(getBaseContext(), devices[0]);
 
             try {
+
+                BandInfo[] devices = BandClientManager.getInstance().getPairedBands();
+                client = BandClientManager.getInstance().create(getBaseContext(), devices[0]);
+
                 ConnectionState state = client.connect().await();
                 if (state == ConnectionState.CONNECTED) {
                     Log.d("Band", "Band connected!");
@@ -371,6 +391,10 @@ public class MainActivity extends AppCompatActivity {
                 e.printStackTrace();
             } catch (BandException e) {
                 e.printStackTrace();
+            }catch (Exception e){
+                e.printStackTrace();
+                Log.d("Band", "Can't connect to band!");
+                //Toast.makeText(getApplicationContext(), "Please connect to Band", Toast.LENGTH_LONG).show();
             }
             return null;
         }
