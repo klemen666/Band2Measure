@@ -419,8 +419,8 @@ public class MainActivity extends AppCompatActivity {
 
                 FileOutputStream os = new FileOutputStream(outputFileHR, true);
                 OutputStreamWriter outWriter = new OutputStreamWriter(os);
-                outWriter.append(String.valueOf(event.getTimestamp() + " - "));
-                outWriter.append(String.valueOf(event.getHeartRate() + " - "));
+                outWriter.append(String.valueOf(event.getTimestamp() + ","));
+                outWriter.append(String.valueOf(event.getHeartRate() + ","));
                 outWriter.append(String.valueOf(event.getQuality() + "\n"));
                 outWriter.close();
 
@@ -453,7 +453,7 @@ public class MainActivity extends AppCompatActivity {
 
                 FileOutputStream os = new FileOutputStream(outputFileGSR, true);
                 OutputStreamWriter outWriter = new OutputStreamWriter(os);
-                outWriter.append(String.valueOf(bandGsrEvent.getTimestamp()) + " - ");
+                outWriter.append(String.valueOf(bandGsrEvent.getTimestamp()) + ",");
                 outWriter.append(String.valueOf(bandGsrEvent.getResistance()) + "\n");
                 outWriter.close();
 
@@ -486,7 +486,7 @@ public class MainActivity extends AppCompatActivity {
 
                 FileOutputStream os = new FileOutputStream(outputFileTemp, true);
                 OutputStreamWriter outWriter = new OutputStreamWriter(os);
-                outWriter.append(String.valueOf(bandSkinTemperatureEvent.getTimestamp()) + " - ");
+                outWriter.append(String.valueOf(bandSkinTemperatureEvent.getTimestamp()) + ",");
                 outWriter.append(String.valueOf(bandSkinTemperatureEvent.getTemperature()) + "\n");
                 outWriter.close();
 
@@ -518,7 +518,7 @@ public class MainActivity extends AppCompatActivity {
 
                 FileOutputStream os = new FileOutputStream(outputFileRR, true);
                 OutputStreamWriter outWriter = new OutputStreamWriter(os);
-                outWriter.append(String.valueOf(bandRRIntervalEvent.getTimestamp()) + " - ");
+                outWriter.append(String.valueOf(bandRRIntervalEvent.getTimestamp()) + ",");
                 outWriter.append(String.valueOf(bandRRIntervalEvent.getInterval() * 1000 + "\n"));
                 outWriter.close();
 
