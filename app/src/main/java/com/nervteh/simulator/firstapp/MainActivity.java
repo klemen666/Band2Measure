@@ -55,6 +55,7 @@ import java.util.Random;
 import java.util.jar.Attributes;
 
 import static android.R.attr.data;
+import static android.R.attr.logo;
 import static android.R.attr.name;
 
 public class MainActivity extends AppCompatActivity {
@@ -106,13 +107,20 @@ public class MainActivity extends AppCompatActivity {
             Log.d("Band", "Can't connect to band!");
         }
         connectUDP();
-        new ListenUDPAsyncTask().execute();
+        //new ListenUDPAsyncTask().execute();
+
+        Thread threadListenUDP = new Thread(new ListenUDPThread());
+        threadListenUDP.start();
 
     }
 
     private void connectUDP(){
+
         try {
 
+            socket = new DatagramSocket(port);
+
+            /*
             if (socket == null) {
                 socket = new DatagramSocket(port);
                 socket.setBroadcast(true);
@@ -143,16 +151,20 @@ public class MainActivity extends AppCompatActivity {
                     socket = new DatagramSocket();
                     host = InetAddress.getByName(hostIp);
                 }
+
+
             }
-
-
+            */
 
             }   catch(SocketException e){
                 e.printStackTrace();
-            }catch(UnknownHostException e){
-                e.printStackTrace();
             }
 
+
+        /*catch(UnknownHostException e){
+                e.printStackTrace();
+            }
+       */
         }
 
 
@@ -165,7 +177,6 @@ public class MainActivity extends AppCompatActivity {
                     connectUDP();
                     createFiles();
                     startReceivingData();
-
                 }
             });
         }
@@ -218,13 +229,14 @@ public class MainActivity extends AppCompatActivity {
 
     public void toStop() {
         Log.d("Band", "Stop receiving data!");
-    /*
+        /*
         heartRateText.setText("");
         heartRateQuality.setText("QUALITY: ");
         gsrText.setText("");
         skinTempText.setText("");
         intervalRRText.setText("");
-    */
+        */
+
         try {
             client.getSensorManager().unregisterHeartRateEventListener(heartRateListener);
             client.getSensorManager().unregisterGsrEventListener(gsrListener);
@@ -235,7 +247,6 @@ public class MainActivity extends AppCompatActivity {
         } catch (BandIOException ex) {
             ex.printStackTrace();
         }
-
     }
 
     @Override
@@ -324,7 +335,6 @@ public class MainActivity extends AppCompatActivity {
                 outputFileTemp = new File(dir, "TempData-" + userInfoString + "-" + timestampFile + fileNameEnd);
 
                 try {
-
                     outputFileHR.createNewFile();
                     outputFileGSR.createNewFile();
                     outputFileRR.createNewFile();
@@ -382,7 +392,6 @@ public class MainActivity extends AppCompatActivity {
                 ConnectionState state = client.connect().await();
                 if (state == ConnectionState.CONNECTED) {
                     Log.d("Band", "Band connected!");
-
                 }
                 else {
                     Log.d("Band", "Band Connection refused!");
@@ -541,83 +550,133 @@ public class MainActivity extends AppCompatActivity {
         DatagramPacket dp = new DatagramPacket(b, b.length, host, port);
         try {
             socket.send(dp);
-            Log.d("UDP", s);
+            Log.d("SEND", s);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     //funkcija, ki posluša na UDP portu za "START" in "STOP" ukaze
-    private void listenUDPTask(final MainActivity mainActivity) {
+    public class ListenUDPThread implements Runnable {
 
-        new Thread(new Runnable() {
+        public void run() {
 
-            @Override
-            public void run() {
+            while(serverRunning) {
+
                 Log.d("UDP", "Tread start");
                 String message = "";
+
                 byte[] buffer = new byte[65536];
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-
                 try {
+                    socket.receive(packet);
+                    message = new String(buffer, 0, packet.getLength());
+                    Log.d("UDP", message);
 
-                    while (serverRunning){
-                        Log.d("UDP", "Listening....");
+                    if (message.contains("START")){
+                        Log.d("UDP", "Dobil sem START!");
+                        host = packet.getAddress();
 
-                        socket.receive(packet);
+                        toStart();
 
-                        message = new String(buffer, 0, packet.getLength());
-                        Log.d("UDP", message);
+                    }
 
-                        if (message.contains("START")){
-                            Log.d("UDP", "Dobil sem START!");
-                            host = packet.getAddress();
-                            mainActivity.toStart();
-                        }
+                    if (message.contains("STOP")){
+                        Log.d("UDP", "Dobil sem STOP!");
 
-                        if (message.contains("STOP")){
-                            Log.d("UDP", "Dobil sem STOP!");
-                            toStop();
+                        toStop();
+                        MainActivity.this.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                heartRateText.setText("");
+                                heartRateQuality.setText("QUALITY: ");
+                                gsrText.setText("");
+                                skinTempText.setText("");
+                                intervalRRText.setText("");
+                            }
+                        });
 
-                             /*   runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        toStop();
-                                    }
-                            });*/
-
-                        }
                     }
 
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-
             }
-        }).start();
+        }
     }
 
 
-    private class ListenUDPAsyncTask extends AsyncTask<Void, String, String> {
+    /*
+        //funkcija, ki posluša na UDP portu za "START" in "STOP" ukaze
+        private void listenUDPTask(final MainActivity mainActivity) {
+
+            new Thread(new Runnable() {
+
+                @Override
+                public void run() {
+                    Log.d("UDP", "Tread start");
+                    String message = "";
+                    byte[] buffer = new byte[65536];
+                    DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+
+                    try {
+
+                        while (serverRunning){
+                            Log.d("UDP", "Listening....");
+
+                            socket.receive(packet);
+
+                            message = new String(buffer, 0, packet.getLength());
+                            Log.d("UDP", message);
+
+                            if (message.contains("START")){
+                                Log.d("UDP", "Dobil sem START!");
+                                host = packet.getAddress();
+                                mainActivity.toStart();
+                            }
+
+                            if (message.contains("STOP")){
+                                Log.d("UDP", "Dobil sem STOP!");
+                                toStop();
+
+                                  runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            toStop();
+                                        }
+                                });
+
+                            }
+                        }
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                }
+            }).start();
+        }
+
+    */
+    private class ListenUDPAsyncTask extends AsyncTask<Void, Void, String> {
 
         @Override
         protected String doInBackground(Void... params) {
 
             Log.d("UDP", "AsyncTask started");
             String message = "";
+            byte[] buffer = new byte[65536];
+            DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
-            while(true) {
+            while (serverRunning) {
                 try {
-                    byte[] buffer = new byte[65536];
-                    DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                     Log.d("UDP", "Listening....");
-
                     socket.receive(packet);
                     message = new String(buffer, 0, packet.getLength());
-                    Log.d("UDP", message);
+                    //message = new String(packet.getData());
+                    Log.d("UDP", "Message is: " + message);
 
-                    if (isCancelled()) break;
-
+                    /*
                     if (message.contains("START")){
                         Log.d("UDP", "Dobil sem START!");
                         host = packet.getAddress();
@@ -633,19 +692,28 @@ public class MainActivity extends AppCompatActivity {
                                     public void run() {
                                         toStop();
                                     }
-                            });*/
+
 
                     }
+                   */
 
-                }catch (Exception e){
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
-            }
+
+                }
 
             return message;
+            }
+
+        @Override
+        protected void onPostExecute(String message) {
+            if (message != null) {
+                //print text
+                Log.d("UDP", "PostExecute: " + message);
+            }
         }
-
-
     }
+
 
 }
