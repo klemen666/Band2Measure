@@ -559,12 +559,14 @@ public class MainActivity extends AppCompatActivity {
     //funkcija, ki posluša na UDP portu za "START" in "STOP" ukaze
     public class ListenUDPThread implements Runnable {
 
+        String message = "";
+
         public void run() {
 
             while(serverRunning) {
 
                 Log.d("UDP", "Tread start");
-                String message = "";
+
 
                 byte[] buffer = new byte[65536];
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
@@ -576,6 +578,13 @@ public class MainActivity extends AppCompatActivity {
                     if (message.contains("START")){
                         Log.d("UDP", "Dobil sem START!");
                         host = packet.getAddress();
+                        MainActivity.this.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                userInfo.setText(message.substring(6));
+                                Log.d("UDP", "User info: " + String.valueOf(userInfo.getText()));
+                            }
+                        });
 
                         toStart();
 
