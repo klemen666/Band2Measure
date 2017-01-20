@@ -45,7 +45,7 @@
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/linearLayout6"
+        android:id="@+id/linearLayout1"
         android:layout_marginTop="20dp"
         android:layout_below="@+id/linearLayout0">
 
@@ -66,8 +66,8 @@
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/linearLayout1"
-        android:layout_below="@id/linearLayout6">
+        android:id="@+id/linearLayout2"
+        android:layout_below="@id/linearLayout1">
 
         <Button
             android:text="START"
@@ -95,8 +95,8 @@
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/linearLayout2"
-        android:layout_below="@id/linearLayout1"
+        android:id="@+id/linearLayout3"
+        android:layout_below="@id/linearLayout2"
         android:layout_marginTop="30dp">
 
 
@@ -110,22 +110,13 @@
             android:layout_marginLeft="20dp"/>
 
         <TextView
-            android:text="GSR"
+            android:text=""
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/textView7"
-            android:textAlignment="center"
-            android:textSize="20sp"
-            android:layout_marginLeft="35dp" />
-
-        <TextView
-            android:text="Temp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/textView8"
-            android:textAlignment="center"
-            android:textSize="20sp"
-            android:layout_marginLeft="55dp" />
+            android:id="@+id/heartRateText"
+            android:layout_marginLeft="40dp"
+            android:textSize="30sp"
+            />
 
 
         </LinearLayout>
@@ -134,49 +125,71 @@
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/linearLayout3"
-        android:layout_below="@+id/linearLayout2"
+        android:id="@+id/linearLayout4"
+        android:layout_below="@+id/linearLayout3"
         android:layout_marginTop="30dp">
 
         <TextView
-            android:text=""
+            android:text="GSR"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/heartRateText"
-            android:layout_marginLeft="45dp"
-            android:textSize="30sp"
-             />
+            android:id="@+id/textView7"
+            android:textAlignment="center"
+            android:textSize="20sp"
+            android:layout_marginLeft="20dp"/>
+
 
         <TextView
             android:text=""
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="45dp"
             android:id="@+id/gsrText"
             android:textSize="30sp"
+            android:layout_marginLeft="40dp"
              />
-
-        <TextView
-            android:text=""
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="50dp"
-            android:id="@+id/skinTempText"
-            android:textSize="30sp"
-            />
 
 
         </LinearLayout>
 
 
-
     <LinearLayout
-        android:orientation="vertical"
+        android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/linearLayout5"
+        android:layout_below="@id/linearLayout4"
+        android:layout_marginTop="30dp">
+
+
+        <TextView
+            android:text="Temp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/textView8"
+            android:textAlignment="center"
+            android:textSize="20sp"
+            android:layout_marginLeft="20dp"/>
+
+        <TextView
+            android:text=""
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/skinTempText"
+            android:textSize="30sp"
+            android:layout_marginLeft="40dp"
+            />
+
+
+    </LinearLayout>
+
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/linearLayout6"
         android:layout_marginTop="20dp"
-        android:layout_below="@+id/linearLayout3">
+        android:layout_below="@+id/linearLayout5">
 
         <TextView
             android:text="Interval RR"
@@ -193,8 +206,8 @@
             android:layout_height="wrap_content"
             android:id="@+id/intervalRRText"
             android:layout_marginTop="10dp"
-            android:layout_marginLeft="45dp"
             android:textSize="30sp"
+            android:layout_marginLeft="40dp"
             />
 
         </LinearLayout>
@@ -203,10 +216,9 @@
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/linearLayout4"
+        android:id="@+id/linearLayout7"
         android:layout_marginTop="20dp"
-        android:layout_below="@+id/linearLayout5">
-
+        android:layout_below="@+id/linearLayout6">
 
         <TextView
             android:layout_width="match_parent"
@@ -218,8 +230,6 @@
             android:text="QUALITY: ACQUIRING" />
 
     </LinearLayout>
-
-
 
 
 </RelativeLayout>

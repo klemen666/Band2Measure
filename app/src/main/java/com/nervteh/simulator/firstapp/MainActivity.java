@@ -119,7 +119,6 @@ public class MainActivity extends AppCompatActivity {
         try {
 
             socket = new DatagramSocket(port);
-
             /*
             if (socket == null) {
                 socket = new DatagramSocket(port);
@@ -151,7 +150,6 @@ public class MainActivity extends AppCompatActivity {
                     socket = new DatagramSocket();
                     host = InetAddress.getByName(hostIp);
                 }
-
 
             }
             */
@@ -516,7 +514,8 @@ public class MainActivity extends AppCompatActivity {
             MainActivity.this.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    intervalRRText.setText(String.valueOf(bandRRIntervalEvent.getInterval() * 1000));
+                    double value = bandRRIntervalEvent.getInterval() * 1000;
+                    intervalRRText.setText(String.format("%.2f", value));
                 }
             });
 
@@ -544,9 +543,14 @@ public class MainActivity extends AppCompatActivity {
 
 
     // Funkcija, ki pošilja UDP Datagrame s določenim tekstom
-    public void sendUDPData(String s){
+    public void sendUDPData(String s) throws UnknownHostException {
 
         byte[] b = s.getBytes();
+
+        if (host == null) {
+            host = InetAddress.getByName(String.valueOf(hostText.getText()));
+        }
+
         DatagramPacket dp = new DatagramPacket(b, b.length, host, port);
         try {
             socket.send(dp);
@@ -610,116 +614,6 @@ public class MainActivity extends AppCompatActivity {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-            }
-        }
-    }
-
-
-    /*
-        //funkcija, ki posluša na UDP portu za "START" in "STOP" ukaze
-        private void listenUDPTask(final MainActivity mainActivity) {
-
-            new Thread(new Runnable() {
-
-                @Override
-                public void run() {
-                    Log.d("UDP", "Tread start");
-                    String message = "";
-                    byte[] buffer = new byte[65536];
-                    DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-
-                    try {
-
-                        while (serverRunning){
-                            Log.d("UDP", "Listening....");
-
-                            socket.receive(packet);
-
-                            message = new String(buffer, 0, packet.getLength());
-                            Log.d("UDP", message);
-
-                            if (message.contains("START")){
-                                Log.d("UDP", "Dobil sem START!");
-                                host = packet.getAddress();
-                                mainActivity.toStart();
-                            }
-
-                            if (message.contains("STOP")){
-                                Log.d("UDP", "Dobil sem STOP!");
-                                toStop();
-
-                                  runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            toStop();
-                                        }
-                                });
-
-                            }
-                        }
-
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                }
-            }).start();
-        }
-
-    */
-    private class ListenUDPAsyncTask extends AsyncTask<Void, Void, String> {
-
-        @Override
-        protected String doInBackground(Void... params) {
-
-            Log.d("UDP", "AsyncTask started");
-            String message = "";
-            byte[] buffer = new byte[65536];
-            DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-
-            while (serverRunning) {
-                try {
-                    Log.d("UDP", "Listening....");
-                    socket.receive(packet);
-                    message = new String(buffer, 0, packet.getLength());
-                    //message = new String(packet.getData());
-                    Log.d("UDP", "Message is: " + message);
-
-                    /*
-                    if (message.contains("START")){
-                        Log.d("UDP", "Dobil sem START!");
-                        host = packet.getAddress();
-                        toStart();
-                    }
-
-                    if (message.contains("STOP")){
-                        Log.d("UDP", "Dobil sem STOP!");
-                        toStop();
-
-                             /*   runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        toStop();
-                                    }
-
-
-                    }
-                   */
-
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-                }
-
-            return message;
-            }
-
-        @Override
-        protected void onPostExecute(String message) {
-            if (message != null) {
-                //print text
-                Log.d("UDP", "PostExecute: " + message);
             }
         }
     }
